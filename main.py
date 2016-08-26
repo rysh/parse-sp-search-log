@@ -21,16 +21,16 @@ def parse(line):
 
 def formatTime(time):
 	# 10秒ごと
-	return time[0:18].replace('T',' ')
+	#return time[0:18].replace('T',' ')
 
 	# 1分ごと
 	#return time[0:16].replace('T',' ')
 
 	# 10分ごと
-	#return time[0:15]
+	#return time[0:15].replace('T',' ')
 
 	# 1時間ごと
-	#return time[0:13]
+	return "\"" + time[0:13] + ":00\""
 
 def load():
 	path = sys.argv[1]
@@ -56,6 +56,7 @@ def writeRecord(results):
 	writer.writerow(['time', 'suggest_request', 'search', 'company', 'industry'])
 	for r in results:
 		writer.writerow(r)
+
 
 def summary(records):
 	count_search = 0
@@ -86,14 +87,26 @@ def timeKeys(records):
 	timelist.sort()
 	return timelist
 
+def writeRecordForPlot(records):
+	writer = csv.writer(open('results2.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+	writer.writerow(['time', 'action_type', 'suggest_request'])
+	for r in records:
+		writer.writerow(r)
+
 def draw(): 
+	import numpy as np
+	import seaborn as sns
 	import pandas as pd
+
+	logdataset = pd.read_csv('results2.csv')
+
+	drawPointPlot(logdataset)
+
+def drawPointPlot(logdataset):
 	import seaborn as sns
 
-	sns.set_style("darkgrid")
-	results = pd.read_csv('results.csv')
-	ax = sns.pointplot(x="time", y="suggest_request", data=results)
-
+	sns.pointplot(x="time", y="suggest_request", hue="action_type", data=logdataset);
+	sns.plt.show()	
 
 def grouping(records):
 	results = {}
@@ -129,15 +142,14 @@ def grouping(records):
 if __name__ == "__main__":
 
 	records = load()
+	writeRecordForPlot(records)
 
-	results = grouping(records)
-	writeRecord(results)
-	
-	#writeRecord(records)
+	#results = grouping(records)
+	#writeRecord(results)
 
 	#timeKeys(records)
 
 	#summary(records)
 
-	#draw()
+	draw()
 
