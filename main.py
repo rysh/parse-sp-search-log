@@ -17,9 +17,12 @@ def parse(line):
 	logData = json.loads(line)
 	time = logData['timestamp']
 	data = logData['actionData']['com_uzabase_speeda_web_component_field_IndustrySearchTextPanel']['global_suggest']
-	return (formatTime(time), data['action_type'], int(data['count']))
+	return (formatTime(time), data['action_type'], int(data['count']), data['keyword'])
 
 def formatTime(time):
+	# 1秒ごと
+	return time[0:19].replace('T',' ')
+	
 	# 10秒ごと
 	#return time[0:18].replace('T',' ')
 
@@ -30,7 +33,7 @@ def formatTime(time):
 	#return time[0:15].replace('T',' ')
 
 	# 1時間ごと
-	return "\"" + time[0:13] + ":00\""
+	# return "\"" + time[0:13] + ":00\""
 
 def load():
 	path = sys.argv[1]
@@ -54,7 +57,7 @@ def writeRecord(results):
 	writer = csv.writer(open('results.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 	#writer.writerow(['time', 'action_type', 'suggest_request'])
 	writer.writerow(['time', 'suggest_request', 'search', 'company', 'industry'])
-	for r in results:
+	for r in grouping(results):
 		writer.writerow(r)
 
 
@@ -64,7 +67,7 @@ def summary(records):
 	count_industry = 0
 	count_suggest = 0
 
-	for (time, actionType, suggest) in records:
+	for (time, actionType, suggest, keyword) in records:
 		count_suggest += suggest
 	
 		if actionType == 'search':
@@ -90,8 +93,8 @@ def timeKeys(records):
 def writeRecordForPlot(records):
 	writer = csv.writer(open('results2.csv', 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 	writer.writerow(['time', 'action_type', 'suggest_request'])
-	for r in records:
-		writer.writerow(r)
+	for (time, actionType, suggest, keyword) in records:
+		writer.writerow([time, actionType, suggest])
 
 def draw(): 
 	import numpy as np
@@ -111,10 +114,10 @@ def drawPointPlot(logdataset):
 def grouping(records):
 	results = {}
 
-	for (time, actionType, suggest) in records:
+	for (time, actionType, suggest, keyword) in records:
 		results[time] = (time, 0, 0, 0, 0)
 		
-	for (time, actionType, suggest) in records:
+	for (time, actionType, suggest, keyword) in records:
 		search = 0
 		company = 0
 		indutsry = 0
@@ -138,18 +141,21 @@ def grouping(records):
 		resultList.append(results[time])
 	return resultList;
 
+def printKeyword(records):
+	writer = csv.writer(open('keywords', 'wb'), delimiter='@', quotechar='@', quoting=csv.QUOTE_MINIMAL)
+	for (time, actionType, suggest, keyword) in records:
+		if (isinstance(keyword, unicode)):
+			if (keyword != ""):
+				writer.writerow([keyword.encode('utf-8')])
+
 
 if __name__ == "__main__":
 
 	records = load()
-	writeRecordForPlot(records)
+	#writeRecordForPlot(records)
 
-	#results = grouping(records)
-	#writeRecord(results)
+	#writeRecord(records)
+	printKeyword(records)
 
-	#timeKeys(records)
-
-	#summary(records)
-
-	draw()
+	#draw()
 
